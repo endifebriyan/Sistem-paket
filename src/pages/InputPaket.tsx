@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Save, Image as ImageIcon, X } from 'lucide-react';
+import { Save, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { addPackage, isResiUnique } from '../utils/storage';
 import { JENIS_PAKET_OPTIONS, EKSPEDISI_OPTIONS } from '../utils/types';
 import { getNowLocal } from '../utils/formatDate';
@@ -34,24 +34,32 @@ export default function InputPaket() {
     }
   };
 
-  function validate(): boolean {
+  async function validate(): Promise<boolean> {
     const e: Record<string, string> = {};
     if (!form.namaPemilik.trim()) e.namaPemilik = 'Nama pemilik wajib diisi';
     if (!form.nomorResi.trim()) e.nomorResi = 'Nomor resi wajib diisi';
-    else if (!isResiUnique(form.nomorResi.trim())) e.nomorResi = 'Nomor resi sudah terdaftar';
+    else {
+      const unique = await isResiUnique(form.nomorResi.trim());
+      if (!unique) e.nomorResi = 'Nomor resi sudah terdaftar';
+    }
     if (!form.tanggalMasuk) e.tanggalMasuk = 'Tanggal masuk wajib diisi';
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
     setSubmitting(true);
+    
+    const isValid = await validate();
+    if (!isValid) {
+      setSubmitting(false);
+      return;
+    }
 
     const tanggalMasukISO = new Date(form.tanggalMasuk).toISOString();
 
-    addPackage({
+    const result = await addPackage({
       namaPemilik: form.namaPemilik.trim(),
       nomorResi: form.nomorResi.trim(),
       jenisPaket: form.jenisPaket,
@@ -61,17 +69,21 @@ export default function InputPaket() {
       foto: form.foto,
     });
 
-    addToast('Paket berhasil dicatat!', 'success');
-    setForm({
-      namaPemilik: '',
-      nomorResi: '',
-      jenisPaket: JENIS_PAKET_OPTIONS[0],
-      ekspedisi: EKSPEDISI_OPTIONS[0],
-      tanggalMasuk: getNowLocal(),
-      catatan: '',
-      foto: '',
-    });
-    setErrors({});
+    if (result) {
+      addToast('Paket berhasil dicatat!', 'success');
+      setForm({
+        namaPemilik: '',
+        nomorResi: '',
+        jenisPaket: JENIS_PAKET_OPTIONS[0],
+        ekspedisi: EKSPEDISI_OPTIONS[0],
+        tanggalMasuk: getNowLocal(),
+        catatan: '',
+        foto: '',
+      });
+      setErrors({});
+    } else {
+      addToast('Gagal mencatat paket, periksa koneksi', 'error');
+    }
     setSubmitting(false);
   }
 
@@ -196,10 +208,10 @@ export default function InputPaket() {
         <button
           type="submit"
           disabled={submitting}
-          className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base"
+          className="btn-primary w-full flex items-center justify-center gap-2 py-3 text-base disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          <Save className="w-5 h-5" />
-          Catat Paket Masuk
+          {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
+          {submitting ? 'Menyimpan...' : 'Catat Paket Masuk'}
         </button>
       </form>
     </div>

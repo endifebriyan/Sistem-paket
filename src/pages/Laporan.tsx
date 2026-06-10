@@ -1,13 +1,22 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Download, Package } from 'lucide-react';
+import { Download, Package, Loader2 } from 'lucide-react';
 import { getPackages } from '../utils/storage';
+import { Paket } from '../utils/types';
 import { formatTanggalIndonesia, formatTanggalKategori, getDateRange } from '../utils/formatDate';
 
 const PIE_COLORS = ['#16a34a', '#22c55e', '#4ade80', '#86efac', '#bbf7d0'];
 
 export default function Laporan() {
-  const packages = getPackages();
+  const [packages, setPackages] = useState<Paket[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getPackages().then(data => {
+      setPackages(data);
+      setLoading(false);
+    });
+  }, []);
 
   const stats = useMemo(() => {
     const total = packages.length;
@@ -74,6 +83,14 @@ export default function Laporan() {
     a.download = `SiPaket_Laporan_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+      </div>
+    );
   }
 
   return (

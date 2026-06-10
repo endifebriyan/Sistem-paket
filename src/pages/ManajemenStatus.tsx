@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Search, Eye, CheckCircle, Trash2, ChevronLeft, ChevronRight, Package, Image as ImageIcon } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { Search, Eye, CheckCircle, Trash2, ChevronLeft, ChevronRight, Package, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { getPackages, updatePackageStatus, deletePackage } from '../utils/storage';
 import { Paket } from '../utils/types';
 import { formatTanggalIndonesia, formatTanggalPendek } from '../utils/formatDate';
@@ -9,7 +9,8 @@ const PAGE_SIZE = 10;
 
 export default function ManajemenStatus() {
   const { addToast } = useToast();
-  const [packages, setPackages] = useState<Paket[]>(() => getPackages());
+  const [packages, setPackages] = useState<Paket[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'semua' | 'menunggu' | 'diambil'>('semua');
   const [dateFrom, setDateFrom] = useState('');
@@ -21,7 +22,16 @@ export default function ManajemenStatus() {
   const [confirmAction, setConfirmAction] = useState<{ type: 'ambil' | 'hapus'; pkg: Paket } | null>(null);
   const [imageReview, setImageReview] = useState<string | null>(null);
 
-  const refresh = useCallback(() => setPackages(getPackages()), []);
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const data = await getPackages();
+    setPackages(data);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const filtered = useMemo(() => {
     let result = [...packages];
@@ -56,16 +66,16 @@ export default function ManajemenStatus() {
   const safePage = Math.min(page, totalPages);
   const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  function handleAmbil(pkg: Paket) {
-    updatePackageStatus(pkg.id);
-    refresh();
+  async function handleAmbil(pkg: Paket) {
+    await updatePackageStatus(pkg.id);
+    await refresh();
     addToast(`Paket ${pkg.nomorResi} ditandai sudah diambil`, 'success');
     setConfirmAction(null);
   }
 
-  function handleHapus(pkg: Paket) {
-    deletePackage(pkg.id);
-    refresh();
+  async function handleHapus(pkg: Paket) {
+    await deletePackage(pkg.id);
+    await refresh();
     addToast(`Paket ${pkg.nomorResi} dihapus`, 'info');
     setConfirmAction(null);
   }
@@ -122,7 +132,12 @@ export default function ManajemenStatus() {
 
       {/* Table */}
       <div className="card overflow-hidden p-0">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-16 px-4">
+            <Loader2 className="w-10 h-10 animate-spin text-primary-500 mx-auto mb-3" />
+            <p className="text-gray-400">Memuat data paket...</p>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-16 px-4">
             <Package className="w-14 h-14 text-gray-200 mx-auto mb-3" />
             <p className="text-gray-400">Tidak ada paket ditemukan</p>

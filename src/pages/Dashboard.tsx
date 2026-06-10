@@ -1,11 +1,20 @@
-import { useMemo } from 'react';
-import { Package, Clock, CheckCircle, Inbox } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { Package, Clock, CheckCircle, Inbox, Loader2 } from 'lucide-react';
 import { getPackages } from '../utils/storage';
+import { Paket } from '../utils/types';
 import { isToday, formatTanggalPendek } from '../utils/formatDate';
 import { useToast } from '../hooks/useToast';
 
 export default function Dashboard() {
-  const packages = getPackages();
+  const [packages, setPackages] = useState<Paket[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getPackages().then(data => {
+      setPackages(data);
+      setLoading(false);
+    });
+  }, []);
 
   const stats = useMemo(() => {
     const total = packages.length;
@@ -27,6 +36,14 @@ export default function Dashboard() {
     { label: 'Sudah Diambil', value: stats.sudahDiambil, icon: CheckCircle, color: 'bg-emerald-500' },
     { label: 'Masuk Hari Ini', value: stats.hariIni, icon: Inbox, color: 'bg-blue-500' },
   ];
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto">
