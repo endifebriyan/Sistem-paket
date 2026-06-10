@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Save } from 'lucide-react';
+import { Save, Image as ImageIcon, X } from 'lucide-react';
 import { addPackage, isResiUnique } from '../utils/storage';
 import { JENIS_PAKET_OPTIONS, EKSPEDISI_OPTIONS } from '../utils/types';
 import { getNowLocal } from '../utils/formatDate';
@@ -14,9 +14,25 @@ export default function InputPaket() {
     ekspedisi: EKSPEDISI_OPTIONS[0],
     tanggalMasuk: getNowLocal(),
     catatan: '',
+    foto: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        addToast('Ukuran gambar maksimal 2MB', 'error');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm({ ...form, foto: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   function validate(): boolean {
     const e: Record<string, string> = {};
@@ -42,6 +58,7 @@ export default function InputPaket() {
       ekspedisi: form.ekspedisi,
       tanggalMasuk: tanggalMasukISO,
       catatan: form.catatan.trim(),
+      foto: form.foto,
     });
 
     addToast('Paket berhasil dicatat!', 'success');
@@ -52,6 +69,7 @@ export default function InputPaket() {
       ekspedisi: EKSPEDISI_OPTIONS[0],
       tanggalMasuk: getNowLocal(),
       catatan: '',
+      foto: '',
     });
     setErrors({});
     setSubmitting(false);
@@ -132,6 +150,34 @@ export default function InputPaket() {
             className={`input-field ${errors.tanggalMasuk ? 'border-red-400' : ''}`}
           />
           {errors.tanggalMasuk && <p className="text-xs text-red-500 mt-1">{errors.tanggalMasuk}</p>}
+        </div>
+
+        {/* Foto */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Foto Paket <span className="text-gray-400">(opsional)</span></label>
+          {form.foto ? (
+            <div className="relative inline-block">
+              <img src={form.foto} alt="Preview" className="h-32 w-32 object-cover rounded-lg border" />
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, foto: '' })}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center w-full">
+              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 border-gray-300">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <ImageIcon className="w-8 h-8 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500"><span className="font-semibold">Klik untuk upload</span></p>
+                  <p className="text-xs text-gray-500">PNG, JPG (Maks. 2MB)</p>
+                </div>
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+              </label>
+            </div>
+          )}
         </div>
 
         {/* Catatan */}

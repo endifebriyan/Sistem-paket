@@ -12,6 +12,7 @@ export interface Paket {
   catatan: string;
   status: StatusPaket;
   tanggalDiambil: string | null;
+  foto?: string;
 }
 
 export const JENIS_PAKET_OPTIONS: JenisPaket[] = ['Paket Kecil', 'Paket Sedang', 'Paket Besar', 'Dokumen', 'Lainnya'];

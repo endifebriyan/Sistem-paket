@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Search, Eye, CheckCircle, Trash2, ChevronLeft, ChevronRight, Package } from 'lucide-react';
+import { Search, Eye, CheckCircle, Trash2, ChevronLeft, ChevronRight, Package, Image as ImageIcon } from 'lucide-react';
 import { getPackages, updatePackageStatus, deletePackage } from '../utils/storage';
 import { Paket } from '../utils/types';
 import { formatTanggalIndonesia, formatTanggalPendek } from '../utils/formatDate';
@@ -19,6 +19,7 @@ export default function ManajemenStatus() {
   // Modal states
   const [detailPkg, setDetailPkg] = useState<Paket | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ type: 'ambil' | 'hapus'; pkg: Paket } | null>(null);
+  const [imageReview, setImageReview] = useState<string | null>(null);
 
   const refresh = useCallback(() => setPackages(getPackages()), []);
 
@@ -147,7 +148,18 @@ export default function ManajemenStatus() {
                   {paged.map((pkg, i) => (
                     <tr key={pkg.id} className="border-b border-gray-50 hover:bg-primary-50/30 transition-colors">
                       <td className="py-3 px-4 text-gray-500">{(safePage - 1) * PAGE_SIZE + i + 1}</td>
-                      <td className="py-3 px-4 font-medium text-gray-800">{pkg.namaPemilik}</td>
+                      <td className="py-3 px-4 font-medium text-gray-800">
+                        <div className="flex items-center gap-3">
+                          {pkg.foto ? (
+                            <img src={pkg.foto} alt="Foto" className="w-8 h-8 rounded-lg object-cover border border-gray-100 flex-shrink-0" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0">
+                              <Package className="w-4 h-4 text-gray-400" />
+                            </div>
+                          )}
+                          <span className="truncate">{pkg.namaPemilik}</span>
+                        </div>
+                      </td>
                       <td className="py-3 px-4 text-gray-600 font-mono text-xs">{pkg.nomorResi}</td>
                       <td className="py-3 px-4 text-gray-600 hidden sm:table-cell">{pkg.jenisPaket}</td>
                       <td className="py-3 px-4 text-gray-600 hidden md:table-cell">{pkg.ekspedisi}</td>
@@ -175,6 +187,15 @@ export default function ManajemenStatus() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+                          {pkg.foto && (
+                            <button
+                              onClick={() => setImageReview(pkg.foto!)}
+                              className="p-1.5 rounded-lg hover:bg-emerald-100 text-emerald-600 transition-colors"
+                              title="Lihat Foto"
+                            >
+                              <ImageIcon className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => setConfirmAction({ type: 'hapus', pkg })}
                             className="p-1.5 rounded-lg hover:bg-red-100 text-red-500 transition-colors"
@@ -222,6 +243,11 @@ export default function ManajemenStatus() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setDetailPkg(null)}>
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-gray-800 mb-4">Detail Paket</h3>
+            {detailPkg.foto && (
+              <div className="mb-4">
+                <img src={detailPkg.foto} alt="Foto Paket" className="w-full h-48 object-cover rounded-xl border border-gray-100 shadow-sm" />
+              </div>
+            )}
             <div className="space-y-3 text-sm">
               <DetailRow label="Nama Pemilik" value={detailPkg.namaPemilik} />
               <DetailRow label="Nomor Resi" value={detailPkg.nomorResi} mono />
@@ -233,6 +259,21 @@ export default function ManajemenStatus() {
               {detailPkg.catatan && <DetailRow label="Catatan" value={detailPkg.catatan} />}
             </div>
             <button onClick={() => setDetailPkg(null)} className="btn-secondary w-full mt-6">Tutup</button>
+          </div>
+        </div>
+      )}
+
+      {/* Image Review Modal */}
+      {imageReview && (
+        <div className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4" onClick={() => setImageReview(null)}>
+          <div className="relative max-w-4xl w-full flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+            <button 
+              onClick={() => setImageReview(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 text-sm font-medium"
+            >
+              Tutup (X)
+            </button>
+            <img src={imageReview} alt="Review" className="w-full h-auto max-h-[85vh] object-contain rounded-lg shadow-2xl" />
           </div>
         </div>
       )}
